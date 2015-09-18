@@ -1,6 +1,6 @@
-// synch.cc 
+// synch.cc
 //	Routines for synchronizing threads.  Three kinds of
-//	synchronization routines are defined here: semaphores, locks 
+//	synchronization routines are defined here: semaphores, locks
 //   	and condition variables (the implementation of the last two
 //	are left to the reader).
 //
@@ -18,12 +18,15 @@
 // that be disabled or enabled).
 //
 // Copyright (c) 1992-1993 The Regents of the University of California.
-// All rights reserved.  See copyright.h for copyright notice and limitation 
+// All rights reserved.  See copyright.h for copyright notice and limitation
 // of liability and disclaimer of warranty provisions.
 
+#include <iostream>
 #include "copyright.h"
 #include "synch.h"
 #include "system.h"
+
+using namespace std;
 
 //----------------------------------------------------------------------
 // Semaphore::Semaphore
@@ -65,14 +68,14 @@ void
 Semaphore::P()
 {
     IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
-    
+
     while (value == 0) { 			// semaphore not available
-	queue->Append((void *)currentThread);	// so go to sleep
-	currentThread->Sleep();
-    } 
-    value--; 					// semaphore available, 
-						// consume its value
-    
+    queue->Append((void *)currentThread);	// so go to sleep
+    currentThread->Sleep();
+    }
+    value--; 					// semaphore available,
+                        // consume its value
+
     (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
 }
 
@@ -92,13 +95,13 @@ Semaphore::V()
 
     thread = (Thread *)queue->Remove();
     if (thread != NULL)	   // make thread ready, consuming the V immediately
-	scheduler->ReadyToRun(thread);
+    scheduler->ReadyToRun(thread);
     value++;
     (void) interrupt->SetLevel(oldLevel);
 }
 
-// Dummy functions -- so we can compile our later assignments 
-// Note -- without a correct implementation of Condition::Wait(), 
+// Dummy functions -- so we can compile our later assignments
+// Note -- without a correct implementation of Condition::Wait(),
 // the test case in the network assignment won't work!
 Lock::Lock(char* debugName)
 {
@@ -108,14 +111,15 @@ Lock::Lock(char* debugName)
     waitQueue = new List;
 }
 
-Lock::~Lock() 
+Lock::~Lock()
 {
-	delete waitQueue;
+    delete waitQueue;
 }
 
 void Lock::Acquire()
 {
     IntStatus oldLevel = interrupt->SetLevel(IntOff); //disable interrupts
+    cout << "Current thread name: " << currentThread->getName() << " > is trying to acquire lock: " << this->getName() << endl;
     if(currentThread == lockOwner) //current thread is lock owner
     {
         (void) interrupt->SetLevel(oldLevel); //restore interrupts
@@ -148,10 +152,10 @@ void Lock::Release()
     }
 
     if(!waitQueue->IsEmpty()) //lock waitQueue is not empty
-    { 
+    {
         Thread* thread = (Thread*)waitQueue->Remove(); //remove 1 waiting thread
         lockOwner = thread; //make them lock owner
-        scheduler->ReadyToRun(thread); //puts a thread at the back of the 
+        scheduler->ReadyToRun(thread); //puts a thread at the back of the
                              //readyQueue in the ready state
     }
     else
@@ -176,14 +180,14 @@ Condition::Condition(char* debugName)
     waitQueue = new List;
 }
 
-Condition::~Condition() 
+Condition::~Condition()
 {
-	delete waitQueue;
+    delete waitQueue;
 }
 
 void Condition::Wait(Lock* conditionLock)
 {
-    //ASSERT(FALSE); 
+    //ASSERT(FALSE);
 
     IntStatus oldLevel = interrupt->SetLevel(IntOff); //disable interrupts
     if(conditionLock == NULL)
@@ -205,7 +209,7 @@ void Condition::Wait(Lock* conditionLock)
     }
     //OK to wait
     waitQueue->Append(currentThread);//Hung: add myself to Condition Variable waitQueue
-	conditionLock->Release();
+    conditionLock->Release();
     currentThread->Sleep(); //currentThread is put on the waitQueue
     conditionLock->Acquire();
     (void) interrupt->SetLevel(oldLevel); //restore interrupts
@@ -215,7 +219,7 @@ void Condition::Signal(Lock* conditionLock)
 {
     IntStatus oldLevel = interrupt->SetLevel(IntOff); //disable interrupts
     if(waitQueue->IsEmpty()) //no thread waiting
-    { 
+    {
         (void) interrupt->SetLevel(oldLevel); //restore interrupts
         return;
     }
