@@ -41,7 +41,6 @@ class Semaphore {
     Semaphore(char* debugName, int initialValue);	// set initial value
     ~Semaphore();   					// de-allocate semaphore
     char* getName() { return name;}			// debugging assist
-    
     void P();	 // these are the only operations on a semaphore
     void V();	 // they are both *atomic*
     
@@ -76,10 +75,15 @@ class Lock {
 					// holds this lock.  Useful for
 					// checking in Release, and in
 					// Condition variable ops below.
-
+    Thread* getLockOwner() {return lockOwner;}
+    void Print();
   private:
     char* name;				// for debugging
     // plus some other stuff you'll need to define
+    enum LockStatus {FREE, BUSY};
+    LockStatus lockStatus;
+    Thread* lockOwner;
+    List* waitQueue;
 };
 
 // The following class defines a "condition variable".  A condition
@@ -132,5 +136,7 @@ class Condition {
   private:
     char* name;
     // plus some other stuff you'll need to define
+    Lock* waitingLock;
+    List *waitQueue;
 };
 #endif // SYNCH_H
